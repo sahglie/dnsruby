@@ -160,6 +160,12 @@ module Dnsruby
           response.each_answer { |rr|
             parseRR(rr)
           }
+
+#          if response.answer.empty?
+#            @state = :End
+#            @axfr = []
+#          end
+
           if (@state == :End &&
                 response.tsigstate == :Intermediate)
             raise ResolvError.new("last message must be signed")
