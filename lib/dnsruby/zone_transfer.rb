@@ -161,10 +161,10 @@ module Dnsruby
             parseRR(rr)
           }
 
-#          if response.answer.empty?
-#            @state = :End
-#            @axfr = []
-#          end
+          if response.answer.empty?
+            @state = :End
+            @axfr = []
+          end
 
           if (@state == :End &&
                 response.tsigstate == :Intermediate)
