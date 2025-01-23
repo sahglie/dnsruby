@@ -1,5 +1,32 @@
 # Release Notes
 
+## v1.72.3
+
+* Fix cached answer response time - thanks Andre Meij!
+* Add base64 as a dependency for Ruby 3.4.0+ support - thanks Alexandre ZANNI!
+
+## v1.72.2
+
+* Invalid CAA handling fixes - thanks Noah Smethwick and Ryan Doherty!
+
+## v.1.72.1
+
+* Add issuemail CAA record support - thanks Ryan Doherty!
+
+## v.1.72.0
+
+* Fix compatibility with the `--enable-string-literal` Ruby option - thanks Jean byroot Boussier!
+
+## v.1.71.0
+
+* Fix assigning public_key in ECDSA - thanks Jiří Kubíček!
+
+## v.1.70.0
+
+* OpenSSL 3 support
+* Resource record hashes no longer include the rdata
+* Removed requite to title-cased Digest - thanks jhawthron
+
 ## v.1.61.9
 
 * Remove unused net-ftp dependency

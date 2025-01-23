@@ -43,7 +43,10 @@ module Dnsruby
       end
 
       def from_string(input) #:nodoc: all
-        matches = (/(\d+) (issuewild|issue|iodef|contactemail|contactphone) "(.+)"$/).match(input)
+        matches = (/(\d+) (issuewild|issuemail|issue|iodef|contactemail|contactphone) "(.+)"$/i).match(input)
+        if matches.nil?
+          raise DecodeError.new("Cannot parse record: #{input[0...1000]}")
+        end
         @flag = matches[1]
         @property_tag = matches[2]
         @property_value = matches[3]

@@ -294,11 +294,11 @@ module Dnsruby
         begin
           key_text.gsub!(/\n/, "")
           key_text.gsub!(/ /, "")
-          #         @key=Base64.decode64(key_text)
-          @key=key_text.unpack("m*")[0]
+          @key=Base64.decode64(key_text)
           public_key
           get_new_key_tag
-        rescue Exception
+        rescue Exception => e
+          Dnsruby.log.error(e)
           raise ArgumentError.new("Key #{key_text} invalid")
         end
       end
@@ -341,13 +341,12 @@ module Dnsruby
         modulus = RR::get_num(@key[pos, @key.length])
         @key_length = (@key.length - pos) * 8
 
-        pkey = OpenSSL::PKey::RSA.new
-        begin
-          pkey.set_key(modulus, exponent, nil) # use set_key, present in later versions of openssl gem
-        rescue NoMethodError
-          pkey.e = exponent # set_key not available in earlier versions, use this approach instead
-          pkey.n = modulus
-        end
+        data_sequence = OpenSSL::ASN1::Sequence([
+                                                  OpenSSL::ASN1::Integer(modulus),
+                                                  OpenSSL::ASN1::Integer(exponent)
+                                                ])
+        asn1 = OpenSSL::ASN1::Sequence(data_sequence)
+        pkey = OpenSSL::PKey::RSA.new(asn1.to_der)
         return pkey
       end
 
@@ -366,18 +365,25 @@ module Dnsruby
         pos += pgy_len
         @key_length = (pgy_len * 8)
 
-        pkey = OpenSSL::PKey::DSA.new
-        begin
-          pkey.set_pgq(p,g,q)
-          pkey.set_key(y, nil) # use set_pgq and set_key, present in later versions of openssl gem
-        rescue NoMethodError
-          pkey.p = p # set_key not available in earlier versions, use this approach instead
-          pkey.q = q
-          pkey.g = g
-          pkey.pub_key = y
-        end
+        asn1 = OpenSSL::ASN1::Sequence.new(
+          [
+            OpenSSL::ASN1::Sequence.new(
+              [
+                OpenSSL::ASN1::ObjectId.new('DSA'),
+                OpenSSL::ASN1::Sequence.new(
+                  [
+                    OpenSSL::ASN1::Integer.new(p),
+                    OpenSSL::ASN1::Integer.new(q),
+                    OpenSSL::ASN1::Integer.new(g)
+                  ]
+                )
+              ]
+            ),
+            OpenSSL::ASN1::BitString.new(OpenSSL::ASN1::Integer.new(y).to_der)
+          ]
+        )
 
-        pkey
+        pkey = OpenSSL::PKey::DSA.new(asn1.to_der)
       end
 
       # RFC6605, section 4
@@ -386,14 +392,21 @@ module Dnsruby
       # uncompressed form of a curve point, "x | y".
       def ec_key(curve = 'prime256v1')
         group = OpenSSL::PKey::EC::Group.new(curve)
-        pkey = OpenSSL::PKey::EC.new(group)
-
         # DNSSEC pub does not have first octet that determines whether it's uncompressed
         # or compressed form, but it's required by OpenSSL to parse EC point correctly
-        point_from_pub = "\x04" + @key.to_s # octet string, \x04 prefix determines uncompressed
-        pkey.public_key = OpenSSL::PKey::EC::Point.new(group, point_from_pub)
-
-        pkey
+        dnskey_bn = OpenSSL::BN.new("\x04" + @key, 2)
+        key_point = OpenSSL::PKey::EC::Point.new(group, dnskey_bn)
+        
+        asn1 = OpenSSL::ASN1::Sequence.new(
+          [
+            OpenSSL::ASN1::Sequence.new([
+              OpenSSL::ASN1::ObjectId.new("id-ecPublicKey"),
+              OpenSSL::ASN1::ObjectId.new(group.curve_name)
+            ]),
+            OpenSSL::ASN1::BitString.new(key_point.to_octet_string(:uncompressed))
+          ]
+        )
+        OpenSSL::PKey::EC.new(asn1.to_der)
       end
     end
   end
