@@ -38,7 +38,7 @@ DNSSEC NSEC3 support.'
   s.add_development_dependency 'rake', '>= 13.0.6'
   s.add_development_dependency 'minitest', '~> 5.18.0'
   s.add_development_dependency 'rubydns', '>= 2.0.2'
-  s.add_development_dependency 'nio4r', '>= 2.5.8'
+  s.add_development_dependency 'nio4r', '>= 2.7.4'
   s.add_development_dependency 'minitest-display', '>= 0.3.1'
   s.add_development_dependency('yard', '>= 0.9')
   # s.add_development_dependency('io-event', '>=1.1.7')
